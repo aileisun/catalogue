@@ -35,7 +35,6 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 
 from astropy import constants as const
-# from astropy.cosmology import luminosity_distance
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
@@ -45,158 +44,8 @@ cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 def lambda2nu(wavelength):
 	return (const.c/wavelength).to('Hz')
 
-#========= cross-matching with other catalogue
 
-# def matchWISE(table,selection=False,searchradius=5.,catalog='wise_allwise_p3as_psd'):
-	# """
-	# PURPOSE: This funciton inquery WISE photometries given a table of targets with RA, DEC,  and attach the result to the table. 
-
-	# DESCRIPTION: 
-	# 	Columns created:
-	# 		Qquery columns
-	# 		['w1mpro','w2mpro','w3mpro','w4mpro',]
-	# 		['w1sigmpro','w2sigmpro','w3sigmpro','w4sigmpro',]
-	# 		['w1snr','w2snr','w3snr','w4snr',]
-
-
-	# INPUT: 
-	# 	table: a table with at least two columns 'RA', 'DEC'
-	# 	selection: a bool array with length equals to table specifying what rows to match
-	# 	searchradius: radius of search in unit of arcsec
-	# 	catalog: which wise catalog to use
-	# 		wise_allwise_p3as_psd: 		ALLWISE data release Nov. 2013 (default)
-	# 		wise_allsky_4band_p3as_psd: ALLSKY data release March 2012
-
-	# NOTE: 
-	# 	1. Vega mag -> Fnu
-
-	# 		Conversion from WISE catalog Vega mag to Fnu in cgs unit is based on 
-	# 		"WISE All-Sky release explanatory supplement: Data Processing",
-	# 		http://wise2.ipac.caltech.edu/docs/release/allsky/expsup/sec4_4h.html#example
-
-	# 		adapting conversion of flat spectrum (F_nu proportional to nu^0),
-	# 		which gives Vega zero-magnitude flux density:  (see Tab. 1 2nd column)
-
-	# 			F_nu0		W1		W2		W3		W4
-	# 			[Jy]		309.540	171.787	31.674	8.363
-
-	# 		Conversion is done using formula: 
-
-	# 			F_nu = F_nu0 * 10^(-magVG/2.5)
-
-	# 		Adoption of different spectral shape causes differences in the zero-point mag. 
-	# 		For example, if F_nu is proportional to nu^-2 then F_nu0 would differ by 9% in W3. 
-
-	# 	2. Vega mag -> AB mag
-
-	# 		Conversion from WISE Vega mag to AB mag, assuming flat spectrum, follows: 
-
-	# 		m_ab = m_vega + deltam 
-
-	# 			deltam	W1		W2		W3		W4
-	# 					2.699	3.339	5.174	6.620
-
-	# """
-
-	# # list of columns to be accessed from query
-	# query_colnames_mpro=['w1mpro','w2mpro','w3mpro','w4mpro',]
-	# query_colnames_sigmpro=['w1sigmpro','w2sigmpro','w3sigmpro','w4sigmpro',]
-	# query_colnames_snr=['w1snr','w2snr','w3snr','w4snr',]
-	# WISE_colnames_others=['WISE_sep','WISE_nsource']
-
-
-	# # list of columns to be created
-	# WISE_colnames_magVG=['W1_magVG','W2_magVG','W3_magVG','W4_magVG']
-	# WISE_colnames_magAB=['W1_magAB','W2_magAB','W3_magAB','W4_magAB']
-	# WISE_colnames_Fnu=['W1_Fnu','W2_Fnu','W3_Fnu','W4_Fnu']
-	# WISE_colnames_Lnu=['W1_nuLnu_rf','W2_nuLnu_rf','W3_nuLnu_rf','W4_nuLnu_rf']
-	# WISE_colnames_mag_err=['W1_mag_err','W2_mag_err','W3_mag_err','W4_mag_err']
-	# WISE_colnames_dex_err=['W1_dex_err','W2_dex_err','W3_dex_err','W4_dex_err']
-	# WISE_colnames_snr=['W1_snr','W2_snr','W3_snr','W4_snr']
-
-
-	# #==== selection
-	# if type(selection)==bool:
-	# 	if selection ==False: selection=ones(len(table))
-	# #==== check if table has WISE columns, if not creat them
-	# # 
-	# for WISE_colname in WISE_colnames_magVG+WISE_colnames_magAB+WISE_colnames_Fnu+WISE_colnames_Lnu+WISE_colnames_mag_err+WISE_colnames_dex_err+WISE_colnames_snr+WISE_colnames_others:
-	# 	if WISE_colname not in table.dtype.names:
-	# 		print "creating column ", WISE_colname
-	# 		table[WISE_colname]=0.
-	# 		if WISE_colname in  WISE_colnames_Fnu:
-	# 			table[WISE_colname].unit="erg s-1 cm-2 Hz-1"
-	# 		if WISE_colname in WISE_colnames_Lnu:
-	# 			table[WISE_colname].unit="erg s-1"
-	# table['WISE_sep'].unit='arcsec'
-
-
-	# #==== matching with ALLWISE
-	# for i in range(len(table)):
-	# 	if selection[i]:
-	# 		magVGs=zeros(4)
-	# 		magABs=zeros(4)
-	# 		Fnus=zeros(4)*u.erg/u.cm**2/u.s/u.Hz
-	# 		# calculate distance modulo
-	# 		lum_dist=cosmo.luminosity_distance(table['Z'][i]).to(u.pc)
-	# 		# dist_mod=-5.*log10(lum_dist/(10*u.pc)).value
-	# 		# retrieving magAB
-	# 		c = SkyCoord(table['RA'][i], table['DEC'][i], 'icrs', unit='deg')
-	# 		tabwise=Irsa.query_region(c,catalog=catalog, spatial='Cone',radius=searchradius*u.arcsec)[['designation','ra','dec','w1mpro','w1sigmpro','w1snr','w2mpro','w2sigmpro','w2snr','w3mpro','w3sigmpro','w3snr','w4mpro','w4sigmpro','w4snr']]
-	# 		if len(tabwise)==1:
-	# 			for j in range(4):
-	# 				# converting magVega to magAB and then Fnu
-	# 				magVGs[j]=tabwise[query_colnames_mpro[j]]
-	# 				magABs[j]=magVGs[j]+deltam[j]
-	# 				Fnus[j]=(F_nu0[j]*10**(-magVGs[j]/2.5)).cgs
-	# 				# Fnus[j]=conversion_util.magAB2Fnu(magABs[j])
-	# 				# logging quantities to table
-	# 				table[WISE_colnames_magVG[j]][i]=magVGs[j]
-	# 				table[WISE_colnames_magAB[j]][i]=magABs[j]
-	# 				table[WISE_colnames_Fnu[j]][i]=Fnus[j].value
-	# 				table[WISE_colnames_Lnu[j]][i]=(nus[j]*Fnus[j]*4.*pi*lum_dist**2).to('erg/s').value
-	# 				table[WISE_colnames_mag_err[j]][i]=tabwise[query_colnames_sigmpro[j]]
-	# 				table[WISE_colnames_dex_err[j]][i]=tabwise[query_colnames_sigmpro[j]]/2.5
-	# 				table[WISE_colnames_snr[j]][i]=tabwise[query_colnames_snr[j]]
-
-	# 			# WISE_sep: distance between SDSS and WISE coordinates
-	# 			cwise = SkyCoord(tabwise['ra'], tabwise['dec'], 'icrs', unit='deg')
-	# 			table['WISE_sep'][i] = c.separation(cwise).arcsec
-	# 			table['WISE_nsource'][i]=1.
-	# 			print i, table['OBJID'][i], " matched"
-	# 		elif len(tabwise)>=2:
-	# 			# calculate distance modulo
-	# 			# determining the closest object
-	# 			cwise1 = SkyCoord(tabwise['ra'][0], tabwise['dec'][0], 'icrs', unit='deg')
-	# 			cwise2 = SkyCoord(tabwise['ra'][1], tabwise['dec'][1], 'icrs', unit='deg')
-	# 			dist1=c.separation(cwise1).arcsec
-	# 			dist2=c.separation(cwise2).arcsec
-	# 			k= dist1>dist2
-	# 			for j in range(4):
-	# 				# converting magVega to magAB and then Fnu
-	# 				magVGs[j]=tabwise[query_colnames_mpro[j]][k]
-	# 				magABs[j]=magVGs[j]+deltam[j]
-	# 				Fnus[j]=(F_nu0[j]*10**(-magVGs[j]/2.5)).cgs
-	# 				# Fnus[j]=conversion_util.magAB2Fnu(magABs[j])
-	# 				# logging quantities to table
-	# 				table[WISE_colnames_magVG[j]][i]=magVGs[j]
-	# 				table[WISE_colnames_magAB[j]][i]=magABs[j]
-	# 				table[WISE_colnames_Fnu[j]][i]=Fnus[j].value
-	# 				table[WISE_colnames_Lnu[j]][i]=(nus[j]*Fnus[j]*4.*pi*lum_dist**2).to('erg/s').value
-	# 				table[WISE_colnames_mag_err[j]][i]=tabwise[query_colnames_sigmpro[j]][k]
-	# 				table[WISE_colnames_dex_err[j]][i]=tabwise[query_colnames_sigmpro[j]][k]/2.5
-	# 				table[WISE_colnames_snr[j]][i]=tabwise[query_colnames_snr[j]][k]
-	# 			table['WISE_sep'][i] = min(dist1,dist2)
-	# 			table['WISE_nsource'][i]=len(tabwise)
-	# 			print i, table['OBJID'][i], " confusion"
-	# 		elif len(tabwise)==0:
-	# 			table['WISE_sep'][i]=-1
-	# 			table['WISE_nsource'][i]=0
-	# 			print i, table['OBJID'][i], " no match"
-	# 		else:
-	# 			print i, table['OBJID'][i], " exception"
-
-def matchWISE(table,selection=False,searchradius=5.,catalog='ALLWISE', updatelocal=False):
+def matchWISE(table, selection=False, searchradius=5., catalog='ALLWISE', updatelocal=False):
 	"""
 	PURPOSE: Infer WISE relevent columns from a table with WISE inquery and redshift columns
 			Inferred columns: 
@@ -211,35 +60,35 @@ def matchWISE(table,selection=False,searchradius=5.,catalog='ALLWISE', updateloc
 			['WISE_sep','WISE_nsource']
 
 	INPUT: table
-		a table of objects with WISE inquery columns
+		a table of with RA, DEC, Z
 	"""
 	#==== setup 
-	F_nu0=array([309.540,171.787,31.674,8.363])*u.Jy
-	deltam=array([2.699,3.339,5.174,6.620])
-	ws=array([3.4,4.6,12.,22.])*u.micron
-	nus=lambda2nu(ws)
+	F_nu0 = array([309.540, 171.787, 31.674, 8.363])*u.Jy
+	deltam = array([2.699, 3.339, 5.174, 6.620])
+	ws = array([3.4, 4.6, 12., 22.])*u.micron
+	nus = lambda2nu(ws)
 
 	#==== selection
 	if type(selection)==bool:
 		if selection ==False: selection=ones(len(table),dtype='bool')
 
 	#==== creating columns
-	colinfersuffixs=['_magVG','_mag_err','_dex_err','_snr','_magAB','_Fnu','_nuLnu_rf']
-	coladditional=['WISE_sep','WISE_nsource']
+	colinfersuffixs=['_magVG', '_mag_err', '_dex_err', '_snr', '_magAB', '_Fnu', '_nuLnu_rf']
+	coladditional=['WISE_sep', 'WISE_nsource']
 
 	for suffix in colinfersuffixs:
-		for BAND in ['W1','W2','W3','W4']:
-			colname=BAND+suffix
+		for BAND in ['W1', 'W2', 'W3', 'W4']:
+			colname = BAND+suffix
 			if colname not in table.dtype.names:
 				print "creating column ", colname
-				table[colname]=0.
-				# table[colname].mask=True
-				if suffix == '_Fnu': table[colname].unit="erg s-1 cm-2 Hz-1"
-				if suffix == '_nuLnu_rf': table[colname].unit="erg s-1"
+				table[colname] = 0.
+				# table[colname].mask = True
+				if suffix == '_Fnu': table[colname].unit = "erg s-1 cm-2 Hz-1"
+				if suffix == '_nuLnu_rf': table[colname].unit = "erg s-1"
 	for colname in coladditional:
 		if colname not in table.dtype.names:
 			print "creating column ", colname
-			table[colname]=0.
+			table[colname] = 0.
 			# table[colname].mask=True
 			if colname == 'WISE_sep': table[colname].unit='arcsec'
 
@@ -370,41 +219,39 @@ def queryWISE(row, catalog='ALLWISE', searchradius=5., forcequery=False, updatel
 
 def correctWISE(table,selection=False):
 	# correct the WISE MagAB to real magAB and F_nu
-	if type(selection)==bool:
-		if selection ==False: selection=ones(len(table))
+	if type(selection) == bool:
+		if selection  == False: selection=ones(len(table))
 
-	WISE_colnames_Mag=['W1_LUM_MagAB','W2_LUM_MagAB','W3_LUM_MagAB','W4_LUM_MagAB']
-	WISE_ncolnames=['W1_Fnu','W2_Fnu','W3_Fnu','W4_Fnu','W1_nuLnu_rf','W2_nuLnu_rf','W3_nuLnu_rf','W4_nuLnu_rf']
-	WISE_colnames_Fnu=['W1_Fnu','W2_Fnu','W3_Fnu','W4_Fnu']
-	WISE_colnames_Lnu=['W1_nuLnu_rf','W2_nuLnu_rf','W3_nuLnu_rf','W4_nuLnu_rf']
+	WISE_colnames_Mag = ['W1_LUM_MagAB', 'W2_LUM_MagAB', 'W3_LUM_MagAB', 'W4_LUM_MagAB']
+	WISE_ncolnames = ['W1_Fnu', 'W2_Fnu', 'W3_Fnu', 'W4_Fnu', 'W1_nuLnu_rf', 'W2_nuLnu_rf', 'W3_nuLnu_rf', 'W4_nuLnu_rf']
+	WISE_colnames_Fnu = ['W1_Fnu', 'W2_Fnu', 'W3_Fnu', 'W4_Fnu']
+	WISE_colnames_Lnu = ['W1_nuLnu_rf', 'W2_nuLnu_rf', 'W3_nuLnu_rf', 'W4_nuLnu_rf']
 	for WISE_colname in WISE_ncolnames:
 		if WISE_colname not in table.dtype.names:
 			print "creating column ", WISE_colname
-			table[WISE_colname]=0.
+			table[WISE_colname] = 0.
 		if WISE_colname in  WISE_colnames_Fnu:
-			table[WISE_colname].unit="erg /cm2 /Hz/s"
+			table[WISE_colname].unit = "erg /cm2 /Hz/s"
 		if WISE_colname in WISE_colnames_Fnu:
-			table[WISE_colname].unit="erg /s"
+			table[WISE_colname].unit = "erg /s"
 
-	ws=array([3.4,4.6,12.,22.])*u.micron
-	nus=lambda2nu(ws)
-	magABs=zeros(4)
-	Fnus=zeros(4)*u.erg/u.cm**2/u.s/u.Hz
+	ws = np.array([3.4, 4.6, 12., 22.])*u.micron
+	nus = lambda2nu(ws)
+	magABs = np.zeros(4)
+	Fnus = np.zeros(4)*u.erg/u.cm**2/u.s/u.Hz
 	for i in range(len(table)):
 		if selection[i]:
-			lum_dist=cosmo.luminosity_distance(table['Z'][i]).to(u.pc)
-			dist_mod=-5.*log10(lum_dist/(10*u.pc)).value
+			lum_dist = cosmo.luminosity_distance(table['Z'][i]).to(u.pc)
+			dist_mod = -5.*np.log10(lum_dist/(10*u.pc)).value
 			for j in range(len(WISE_colnames_Mag)):
-				magABs[j]=table[WISE_colnames_Mag[j]][i]-dist_mod
+				magABs[j] = table[WISE_colnames_Mag[j]][i]-dist_mod
 
-				Fnus[j]=conversion_util.magAB2Fnu(magABs[j])
-				table[WISE_colnames_Fnu[j]][i]=Fnus[j].value
-				table[WISE_colnames_Lnu[j]][i]=(nus[j]*Fnus[j]*4.*pi*lum_dist**2).to('erg/s').value
-
-
+				Fnus[j] = conversion_util.magAB2Fnu(magABs[j])
+				table[WISE_colnames_Fnu[j]][i] = Fnus[j].value
+				table[WISE_colnames_Lnu[j]][i] = (nus[j]*Fnus[j]*4.*pi*lum_dist**2).to('erg/s').value
 
 
-def matchIRAS(table,selection=False):
+def matchIRAS(table, selection=False):
 	#==== selection
 	if type(selection)==bool:
 		if selection ==False: selection=ones(len(table))
